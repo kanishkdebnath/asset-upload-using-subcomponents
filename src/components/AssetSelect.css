@@ -1,0 +1,33 @@
+.single-image-preview {
+  height: 100%;
+  width: 100%;
+}
+
+.default-multipreview-style {
+  overflow: scroll;
+}
+
+.preview-container {
+  max-height: 50%;
+  max-width: 50%;
+  position: relative;
+  padding: 8px;
+}
+
+.multiple-preview-media {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.remove-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.single-video-preview {
+  max-width: 100%;
+  max-height: 100%;
+}
