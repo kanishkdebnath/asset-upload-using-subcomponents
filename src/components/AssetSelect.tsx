@@ -3,16 +3,16 @@ import React, {
   PropsWithChildren,
   useContext,
   useRef,
-  useState,
 } from "react";
-import "./AssetSelect.css";
+import { ValidationObject } from "../App";
 import DEFAULT_ICON from "../assets/react.svg";
+import "./AssetSelect.css";
 
 export type Asset = {
   files: File[];
   onUpload: (files: File[]) => void;
   onError?: (error: Error) => void;
-  validateFiles?: (files: File[]) => string[]; // Validation function
+  validateFiles?: (files: File[]) => string | undefined; // Validation function
   acceptedTypes: string;
   maxSize?: string;
   height?: string;
@@ -20,8 +20,10 @@ export type Asset = {
 };
 
 type AssetSelectContext = {
-  asset: Asset;
-  setFiles: React.Dispatch<React.SetStateAction<File[]>>; // New state setter for files
+  file: string | string[];
+  setFile: (f: string | string[]) => void;
+  validationObject: ValidationObject;
+  acceptedTypes: string;
 };
 
 const AssetSelectContext = createContext<AssetSelectContext | undefined>(
@@ -37,17 +39,24 @@ function useAssetSelectContext() {
 }
 
 type AssetSelectProps = PropsWithChildren & {
-  asset: Asset;
+  file: string | string[];
+  setFile: (f: string | string[]) => void;
+  validationObject: ValidationObject;
+  acceptedTypes: string;
+  onError: (e: string) => void;
+  onSelectSuccess: () => void;
   className?: string;
 };
 
-const AssetSelect = ({ children, asset, className }: AssetSelectProps) => {
-  const [files, setFiles] = useState<File[]>(asset.files);
-
+const AssetSelect = ({
+  children,
+  file,
+  setFile,
+  validationObject,
+  className,
+}: AssetSelectProps) => {
   return (
-    <AssetSelectContext.Provider
-      value={{ asset: { ...asset, files }, setFiles }}
-    >
+    <AssetSelectContext.Provider value={{ file, setFile, validationObject }}>
       <div className={className}>{children}</div>
     </AssetSelectContext.Provider>
   );
@@ -55,22 +64,20 @@ const AssetSelect = ({ children, asset, className }: AssetSelectProps) => {
 
 AssetSelect.Description = function AssetSelectDescription({
   className,
+  maxSize,
+  dimension,
+  fileType,
 }: {
   className?: string;
+  maxSize: string;
+  dimension: string;
+  fileType: string;
 }) {
-  const { asset } = useAssetSelectContext();
-  const types = getFileExtensions(asset.acceptedTypes);
   return (
     <div className={className}>
-      <div>{asset.maxSize}</div>
-      <div>
-        {asset.height} X {asset.width}
-      </div>
-      <div>
-        {types.map((type) => (
-          <span>| {type} |</span>
-        ))}
-      </div>
+      <div>{maxSize}</div>
+      <div>{dimension}</div>
+      <div>{fileType}</div>
     </div>
   );
 };
@@ -80,9 +87,8 @@ AssetSelect.SingleImagePreview = function AssetSelectSingleImagePreview({
 }: {
   className?: string;
 }) {
-  const { asset } = useAssetSelectContext();
-  const filePreview =
-    asset.files.length > 0 ? URL.createObjectURL(asset.files[0]) : DEFAULT_ICON;
+  const { file } = useAssetSelectContext();
+  const filePreview = (file as string) || DEFAULT_ICON;
   return (
     <div className={className}>
       <img
@@ -99,13 +105,11 @@ AssetSelect.SingleVideoPreview = function AssetSelectSingleVideoPreview({
 }: {
   className?: string;
 }) {
-  const { asset } = useAssetSelectContext();
-  const filePreview =
-    asset.files.length > 0 ? URL.createObjectURL(asset.files[0]) : null;
+  const { file } = useAssetSelectContext();
   return (
     <div className={className}>
-      {filePreview && (
-        <video src={filePreview} controls className="single-video-preview" />
+      {file && (
+        <video src={file as string} controls className="single-video-preview" />
       )}
     </div>
   );
@@ -116,22 +120,22 @@ AssetSelect.MultipleImagesPreview = function AssetSelectMultipleImagesPreview({
 }: {
   className?: string;
 }) {
-  const { asset, setFiles } = useAssetSelectContext();
+  const { file, setFile } = useAssetSelectContext();
 
   const handleRemove = (indexToRemove: number) => {
     // Remove the file at the specified index
-    const updatedFiles = asset.files.filter(
+    const updatedFiles = (file as string[]).filter(
       (_file, index) => index !== indexToRemove
     );
 
     // Update the state with the new array of files
-    setFiles(updatedFiles);
+    setFile(updatedFiles);
 
     // Call the onUpload function with the updated list of files
-    asset.onUpload(updatedFiles);
+    // asset.onUpload(updatedFiles); TODO
   };
 
-  const filePreviews = asset.files.map((file) => URL.createObjectURL(file));
+  const filePreviews = file as string[];
 
   return (
     <div className={"default-multipreview-style " + className}>
@@ -160,7 +164,8 @@ AssetSelect.Button = function AssetSelectButton({
   children: React.ReactNode;
   multiple?: boolean; // Optional prop to enable multiple file selection
 }) {
-  const { asset, setFiles } = useAssetSelectContext();
+  const { file, setFile, validationObject, acceptedTypes } =
+    useAssetSelectContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = () => {
@@ -168,37 +173,23 @@ AssetSelect.Button = function AssetSelectButton({
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newFiles = Array.from(event.target.files || []);
-    let validFiles: File[] = [];
-    const errors: string[] = [];
+    const newFiles = Array.from(event.target.files || []).map((file) =>
+      URL.createObjectURL(file)
+    );
 
-    if (asset.validateFiles) {
+    // Internal validations
+
+    if (validationObject.customValidation) {
       // Use the external validation function if provided
-      const validationErrors = asset.validateFiles(newFiles);
-      if (validationErrors.length > 0) {
-        errors.push(...validationErrors);
-      } else {
-        validFiles = newFiles;
-      }
-    } else {
-      validFiles = newFiles;
-    }
-
-    if (errors.length > 0 && asset.onError) {
-      asset.onError(new Error(errors.join(", ")));
-    }
-
-    if (validFiles.length > 0) {
-      // Append new valid files to the existing files
-      const allFiles = asset.files.concat(validFiles);
-      setFiles(allFiles);
-
-      try {
-        asset.onUpload(allFiles);
-      } catch (err) {
-        if (asset.onError) asset.onError(err as Error);
+      const validationError = validationObject.customValidation(newFiles);
+      if (validationError) {
+        //TODO:  do onError and return
+        return;
       }
     }
+
+    setFile(multiple ? newFiles : newFiles[0]);
+    // TODO: select success should update my main assets object
   };
   return (
     <>
@@ -209,36 +200,12 @@ AssetSelect.Button = function AssetSelectButton({
         ref={inputRef}
         type="file"
         multiple={multiple} // Controlled by the `multiple` prop
-        accept={asset.acceptedTypes}
+        accept={acceptedTypes}
         onChange={handleFileChange}
         style={{ display: "none" }} // Hide the input
       />
     </>
   );
 };
-
-function getFileExtensions(acceptedTypes: string): string[] {
-  // Map of MIME types to file extensions
-  const mimeToExtension: { [key: string]: string } = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/gif": "gif",
-    "image/webp": "webp",
-    "video/mp4": "mp4",
-    "video/webm": "webm",
-    "audio/mp3": "mp3",
-    // Add other MIME types and their extensions as needed
-  };
-
-  // Split the accepted types string into an array of MIME types
-  const mimeTypes = acceptedTypes.split(",");
-
-  // Map the MIME types to their extensions using the mimeToExtension map
-  const extensions = mimeTypes
-    .map((mimeType) => mimeToExtension[mimeType])
-    .filter((extension) => extension !== undefined); // Remove undefined values
-
-  return extensions;
-}
 
 export default AssetSelect;
