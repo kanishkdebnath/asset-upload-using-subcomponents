@@ -154,7 +154,7 @@ AssetSelect.Button = function AssetSelectButton({
   children: React.ReactNode;
   multiple?: boolean; // Optional prop to enable multiple file selection
 }) {
-  const { setFile, validationObject, onError } = useAssetSelectContext();
+  const { file, setFile, validationObject, onError } = useAssetSelectContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = () => {
@@ -163,36 +163,49 @@ AssetSelect.Button = function AssetSelectButton({
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(event.target.files || []);
-    // Internal validations
-    newFiles.forEach((file) => {
+    let updatedFiles: File[] | string[] = []; // for multiple file case
+    const hasError = newFiles.some((file) => {
       console.log(file);
 
       if (file.size > (validationObject.maxSize.value as number)) {
         onError(validationObject.maxSize.errorMessage);
-        return;
+        return true;
       }
+
       if (
         !(validationObject.accepted.value as string)
           .split(",")
           .some((type) => file.type.includes(type.trim()))
       ) {
         onError(validationObject.accepted.errorMessage);
-        return;
+        return true;
       }
+
+      return false;
     });
 
+    if (hasError) {
+      return;
+    }
+
     if (validationObject.customValidation) {
+      updatedFiles = [...file, ...newFiles.map((f) => URL.createObjectURL(f))]; // persists existing file
       // Use the external validation function if provided
-      const validationError = validationObject.customValidation(newFiles);
+      const validationError = validationObject.customValidation(
+        updatedFiles as string[]
+      );
       if (validationError) {
-        //TODO:  do onError and return
+        onError(validationError);
         return;
       }
     }
+
     const validFiles = newFiles.map((file) => URL.createObjectURL(file));
+    console.log("setting valid files here");
     setFile(multiple ? validFiles : validFiles[0]);
     // TODO: select success should update my main assets object
   };
+
   return (
     <>
       <button className={className} onClick={handleClick}>

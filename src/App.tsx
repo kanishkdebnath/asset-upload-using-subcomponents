@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./App.css";
 import AssetSelect from "./components/AssetSelect";
 
-const MAX_SCREENSHOT_COUNT = 8;
+const MAX_SCREENSHOT_COUNT = 2;
 
 type ValidationRule = {
   value: number | string;
@@ -12,7 +12,7 @@ type ValidationRule = {
 export type ValidationObject = {
   maxSize: ValidationRule;
   accepted: ValidationRule;
-  customValidation?: (f: File[] | File) => string | undefined;
+  customValidation?: (f: File[] | File | string[]) => string | undefined;
 };
 
 const handleError = (error: string) => {
@@ -133,7 +133,7 @@ export default App;
 
 /* 
   Things to do :
-  1. Add different state for each asset [file, setFile]
+  1. Add different state for each asset [file, setFile] [done]
   2. Add details for description directly as props [done]
   3. Must not send asset object and send everything separately as props
   4. Add validateFiles object that takes the following :
@@ -152,7 +152,7 @@ export default App;
   7. Handle error for each asset using error object for each asset
 */
 
-function validateScreenshotsLimit(files: File[] | File) {
+function validateScreenshotsLimit(files: File[] | File | string[]) {
   if (Array.isArray(files)) {
     if (files.length > MAX_SCREENSHOT_COUNT) {
       return "Number of images uploaded exceeds the limit : 8";
