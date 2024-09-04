@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./App.css";
-import AssetSelect, { Asset } from "./components/AssetSelect";
+import AssetSelect from "./components/AssetSelect";
 
 const MAX_SCREENSHOT_COUNT = 8;
 
@@ -15,27 +15,40 @@ export type ValidationObject = {
   customValidation?: (f: File[] | File) => string | undefined;
 };
 
-const handleSuccess = (files: File[]) => {
-  // Implement your upload logic here
-  console.log("Files to upload:", files);
-};
-
 const handleError = (error: string) => {
   // Handle any errors that occur during upload
   console.error("Upload error:", error);
 };
 
-const defaultAsset = {
+type AssetsType = {
+  singleImage: string;
+  screenshots: string[];
+  singleVideo: string;
+};
+
+const defaultAsset: AssetsType = {
   singleImage: "",
   screenshots: [],
   singleVideo: "",
 };
 
 function App() {
-  const [assets, setAssets] = useState(defaultAsset);
+  const [assets, setAssets] = useState<AssetsType>(defaultAsset);
   const [singleImage, setSingleImage] = useState("");
-  const [screeshots, setScreenshots] = useState([]);
+  const [screenshots, setScreenshots] = useState<string[]>([]);
   const [singleVideo, setSingleVideo] = useState("");
+
+  const handleSuccess = () => {
+    // Implement your upload logic here
+    const updatedAssets: AssetsType = {
+      singleImage,
+      screenshots,
+      singleVideo,
+    };
+
+    setAssets((prev) => ({ ...prev, ...updatedAssets }));
+    console.log(assets);
+  };
 
   return (
     <div>
@@ -43,19 +56,65 @@ function App() {
         file={singleImage}
         setFile={(f) => setSingleImage(f as string)}
         validationObject={{
-          maxSize: { value: 5000, errorMessage: "Invalid size" },
+          maxSize: { value: 5242880, errorMessage: "Invalid size" },
+          accepted: {
+            value: "image/jpeg, image/png",
+            errorMessage: "Invalid file type",
+          },
+        }}
+        onError={(e: string) => handleError(e)}
+        className="asset-select"
+      >
+        <AssetSelect.SingleImagePreview className="image-preview" />
+        <AssetSelect.Button className="upload-button">
+          <div>Upload Image</div>
+        </AssetSelect.Button>
+        <AssetSelect.Description
+          maxSize="5 MB"
+          fileType="JPEG | PNG"
+          dimension="1080px X 1920px"
+        />
+      </AssetSelect>
+
+      <AssetSelect
+        file={singleVideo}
+        setFile={(f) => setSingleVideo(f as string)}
+        validationObject={{
+          maxSize: { value: 10485760, errorMessage: "Invalid size" },
+          accepted: {
+            value: "video/mp4",
+            errorMessage: "Invalid file type",
+          },
+        }}
+        onError={(e: string) => handleError(e)}
+        className="asset-select"
+      >
+        <AssetSelect.SingleVideoPreview className="image-preview" />
+        <AssetSelect.Button className="upload-button">
+          <div>Upload Video</div>
+        </AssetSelect.Button>
+        <AssetSelect.Description
+          maxSize="10 MB"
+          fileType="MP4"
+          dimension="1080px X 1920px"
+        />
+      </AssetSelect>
+
+      <AssetSelect
+        file={screenshots}
+        setFile={(f) => setScreenshots(f as string[])}
+        validationObject={{
+          maxSize: { value: 5242880, errorMessage: "Invalid size" },
           accepted: {
             value: "image/jpeg, image/png",
             errorMessage: "Invalid file type",
           },
           customValidation: validateScreenshotsLimit,
         }}
-        acceptedTypes="image/jpeg, image/png"
         onError={(e: string) => handleError(e)}
-        onSelectSuccess={handleSuccess}
         className="asset-select"
       >
-        <AssetSelect.SingleImagePreview className="image-preview" />
+        <AssetSelect.MultipleImagesPreview className="image-preview" />
         <AssetSelect.Button multiple className="upload-button">
           <div>Upload Image</div>
         </AssetSelect.Button>
@@ -65,6 +124,7 @@ function App() {
           dimension="1080px X 1920px"
         />
       </AssetSelect>
+      <button onClick={handleSuccess}>Save</button>
     </div>
   );
 }

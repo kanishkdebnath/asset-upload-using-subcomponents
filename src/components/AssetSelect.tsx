@@ -8,22 +8,11 @@ import { ValidationObject } from "../App";
 import DEFAULT_ICON from "../assets/react.svg";
 import "./AssetSelect.css";
 
-export type Asset = {
-  files: File[];
-  onUpload: (files: File[]) => void;
-  onError?: (error: Error) => void;
-  validateFiles?: (files: File[]) => string | undefined; // Validation function
-  acceptedTypes: string;
-  maxSize?: string;
-  height?: string;
-  width?: string;
-};
-
 type AssetSelectContext = {
   file: string | string[];
   setFile: (f: string | string[]) => void;
   validationObject: ValidationObject;
-  acceptedTypes: string;
+  onError: (e: string) => void;
 };
 
 const AssetSelectContext = createContext<AssetSelectContext | undefined>(
@@ -42,9 +31,7 @@ type AssetSelectProps = PropsWithChildren & {
   file: string | string[];
   setFile: (f: string | string[]) => void;
   validationObject: ValidationObject;
-  acceptedTypes: string;
   onError: (e: string) => void;
-  onSelectSuccess: () => void;
   className?: string;
 };
 
@@ -53,10 +40,13 @@ const AssetSelect = ({
   file,
   setFile,
   validationObject,
+  onError,
   className,
 }: AssetSelectProps) => {
   return (
-    <AssetSelectContext.Provider value={{ file, setFile, validationObject }}>
+    <AssetSelectContext.Provider
+      value={{ file, setFile, validationObject, onError }}
+    >
       <div className={className}>{children}</div>
     </AssetSelectContext.Provider>
   );
@@ -164,8 +154,7 @@ AssetSelect.Button = function AssetSelectButton({
   children: React.ReactNode;
   multiple?: boolean; // Optional prop to enable multiple file selection
 }) {
-  const { file, setFile, validationObject, acceptedTypes } =
-    useAssetSelectContext();
+  const { setFile, validationObject, onError } = useAssetSelectContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = () => {
@@ -173,11 +162,24 @@ AssetSelect.Button = function AssetSelectButton({
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newFiles = Array.from(event.target.files || []).map((file) =>
-      URL.createObjectURL(file)
-    );
-
+    const newFiles = Array.from(event.target.files || []);
     // Internal validations
+    newFiles.forEach((file) => {
+      console.log(file);
+
+      if (file.size > (validationObject.maxSize.value as number)) {
+        onError(validationObject.maxSize.errorMessage);
+        return;
+      }
+      if (
+        !(validationObject.accepted.value as string)
+          .split(",")
+          .some((type) => file.type.includes(type.trim()))
+      ) {
+        onError(validationObject.accepted.errorMessage);
+        return;
+      }
+    });
 
     if (validationObject.customValidation) {
       // Use the external validation function if provided
@@ -187,8 +189,8 @@ AssetSelect.Button = function AssetSelectButton({
         return;
       }
     }
-
-    setFile(multiple ? newFiles : newFiles[0]);
+    const validFiles = newFiles.map((file) => URL.createObjectURL(file));
+    setFile(multiple ? validFiles : validFiles[0]);
     // TODO: select success should update my main assets object
   };
   return (
@@ -200,7 +202,7 @@ AssetSelect.Button = function AssetSelectButton({
         ref={inputRef}
         type="file"
         multiple={multiple} // Controlled by the `multiple` prop
-        accept={acceptedTypes}
+        accept={validationObject.accepted.value as string}
         onChange={handleFileChange}
         style={{ display: "none" }} // Hide the input
       />
