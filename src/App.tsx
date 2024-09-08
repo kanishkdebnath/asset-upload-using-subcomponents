@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import "./App.css";
 import AssetSelect from "./components/AssetSelect";
 
@@ -26,6 +26,7 @@ function App() {
   const [singleImage, setSingleImage] = useState("");
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [singleVideo, setSingleVideo] = useState("");
+  const assetRef = useRef(defaultAsset);
 
   const handleSuccess = () => {
     // Implement your upload logic here
@@ -43,6 +44,7 @@ function App() {
     <div>
       <AssetSelect
         assetName={"singleImage"}
+        assetRef={assetRef}
         file={singleImage}
         setFile={(f) => setSingleImage(f as string)}
         validationObject={{
@@ -68,6 +70,7 @@ function App() {
 
       <AssetSelect
         assetName={"singleVideo"}
+        assetRef={assetRef}
         file={singleVideo}
         setFile={(f) => setSingleVideo(f as string)}
         validationObject={{
@@ -93,6 +96,7 @@ function App() {
 
       <AssetSelect
         assetName={"screenshots"}
+        assetRef={assetRef}
         file={screenshots}
         setFile={(f) => setScreenshots(f as string[])}
         validationObject={{

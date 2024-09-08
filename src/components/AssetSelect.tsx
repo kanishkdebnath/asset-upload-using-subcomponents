@@ -3,6 +3,7 @@ import React, {
   PropsWithChildren,
   useContext,
   useRef,
+  useState,
 } from "react";
 import DEFAULT_ICON from "../assets/react.svg";
 import "./AssetSelect.css";
@@ -30,6 +31,7 @@ function useAssetSelectContext() {
 
 type AssetSelectProps = PropsWithChildren & {
   assetName: string;
+  assetRef: any;
   file: string | string[];
   setFile: (f: string | string[]) => void;
   validationObject: ValidationObject;
@@ -39,6 +41,7 @@ type AssetSelectProps = PropsWithChildren & {
 
 const AssetSelect = ({
   children,
+  assetRef,
   assetName,
   file,
   setFile,
@@ -46,6 +49,10 @@ const AssetSelect = ({
   onError,
   className,
 }: AssetSelectProps) => {
+  console.log("asset name : ", assetName);
+  console.log("asset current values : ", assetRef.current);
+  const [files, setFiles] = useState<File[]>([]);
+
   return (
     <AssetSelectContext.Provider
       value={{ assetName, file, setFile, validationObject, onError }}
