@@ -9,6 +9,7 @@ import "./AssetSelect.css";
 import { ValidationObject } from "../utils/types";
 
 type AssetSelectContext = {
+  assetName: string;
   file: string | string[];
   setFile: (f: string | string[]) => void;
   validationObject: ValidationObject;
@@ -28,6 +29,7 @@ function useAssetSelectContext() {
 }
 
 type AssetSelectProps = PropsWithChildren & {
+  assetName: string;
   file: string | string[];
   setFile: (f: string | string[]) => void;
   validationObject: ValidationObject;
@@ -37,6 +39,7 @@ type AssetSelectProps = PropsWithChildren & {
 
 const AssetSelect = ({
   children,
+  assetName,
   file,
   setFile,
   validationObject,
@@ -45,7 +48,7 @@ const AssetSelect = ({
 }: AssetSelectProps) => {
   return (
     <AssetSelectContext.Provider
-      value={{ file, setFile, validationObject, onError }}
+      value={{ assetName, file, setFile, validationObject, onError }}
     >
       <div className={className}>{children}</div>
     </AssetSelectContext.Provider>

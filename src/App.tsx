@@ -42,6 +42,7 @@ function App() {
   return (
     <div>
       <AssetSelect
+        assetName={"singleImage"}
         file={singleImage}
         setFile={(f) => setSingleImage(f as string)}
         validationObject={{
@@ -66,6 +67,7 @@ function App() {
       </AssetSelect>
 
       <AssetSelect
+        assetName={"singleVideo"}
         file={singleVideo}
         setFile={(f) => setSingleVideo(f as string)}
         validationObject={{
@@ -90,6 +92,7 @@ function App() {
       </AssetSelect>
 
       <AssetSelect
+        assetName={"screenshots"}
         file={screenshots}
         setFile={(f) => setScreenshots(f as string[])}
         validationObject={{
