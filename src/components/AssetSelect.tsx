@@ -11,8 +11,9 @@ import { ValidationObject } from "../utils/types";
 
 type AssetSelectContext = {
   assetName: string;
-  file: string | string[];
-  setFile: (f: string | string[]) => void;
+  assetRef: any;
+  files: File[];
+  setFiles: (f: File[]) => void;
   validationObject: ValidationObject;
   onError: (e: string) => void;
 };
@@ -32,8 +33,6 @@ function useAssetSelectContext() {
 type AssetSelectProps = PropsWithChildren & {
   assetName: string;
   assetRef: any;
-  file: string | string[];
-  setFile: (f: string | string[]) => void;
   validationObject: ValidationObject;
   onError: (e: string) => void;
   className?: string;
@@ -43,19 +42,22 @@ const AssetSelect = ({
   children,
   assetRef,
   assetName,
-  file,
-  setFile,
   validationObject,
   onError,
   className,
 }: AssetSelectProps) => {
-  console.log("asset name : ", assetName);
-  console.log("asset current values : ", assetRef.current);
   const [files, setFiles] = useState<File[]>([]);
 
   return (
     <AssetSelectContext.Provider
-      value={{ assetName, file, setFile, validationObject, onError }}
+      value={{
+        assetName,
+        assetRef,
+        files,
+        setFiles,
+        validationObject,
+        onError,
+      }}
     >
       <div className={className}>{children}</div>
     </AssetSelectContext.Provider>
@@ -87,8 +89,8 @@ AssetSelect.SingleImagePreview = function AssetSelectSingleImagePreview({
 }: {
   className?: string;
 }) {
-  const { file } = useAssetSelectContext();
-  const filePreview = (file as string) || DEFAULT_ICON;
+  const { files } = useAssetSelectContext();
+  const filePreview = files[0] ? URL.createObjectURL(files[0]) : DEFAULT_ICON;
   return (
     <div className={className}>
       <img
@@ -105,11 +107,15 @@ AssetSelect.SingleVideoPreview = function AssetSelectSingleVideoPreview({
 }: {
   className?: string;
 }) {
-  const { file } = useAssetSelectContext();
+  const { files } = useAssetSelectContext();
   return (
     <div className={className}>
-      {file && (
-        <video src={file as string} controls className="single-video-preview" />
+      {files[0] && (
+        <video
+          src={URL.createObjectURL(files[0])}
+          controls
+          className="single-video-preview"
+        />
       )}
     </div>
   );
@@ -120,22 +126,18 @@ AssetSelect.MultipleImagesPreview = function AssetSelectMultipleImagesPreview({
 }: {
   className?: string;
 }) {
-  const { file, setFile } = useAssetSelectContext();
+  const { assetName, assetRef, files, setFiles } = useAssetSelectContext();
 
   const handleRemove = (indexToRemove: number) => {
     // Remove the file at the specified index
-    const updatedFiles = (file as string[]).filter(
+    const updatedFiles = files.filter(
       (_file, index) => index !== indexToRemove
     );
-
-    // Update the state with the new array of files
-    setFile(updatedFiles);
-
-    // Call the onUpload function with the updated list of files
-    // asset.onUpload(updatedFiles); TODO
+    setFiles(updatedFiles);
+    assetRef[assetName] = updatedFiles;
   };
 
-  const filePreviews = file as string[];
+  const filePreviews = files.map((file) => URL.createObjectURL(file));
 
   return (
     <div className={"default-multipreview-style " + className}>
@@ -164,7 +166,8 @@ AssetSelect.Button = function AssetSelectButton({
   children: React.ReactNode;
   multiple?: boolean; // Optional prop to enable multiple file selection
 }) {
-  const { file, setFile, validationObject, onError } = useAssetSelectContext();
+  const { assetRef, assetName, files, setFiles, validationObject, onError } =
+    useAssetSelectContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = () => {
@@ -173,10 +176,8 @@ AssetSelect.Button = function AssetSelectButton({
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(event.target.files || []);
-    let updatedFiles: File[] | string[] = []; // for multiple file case
+    let updatedFiles = [...files]; // for multiple file case
     const hasError = newFiles.some((file) => {
-      console.log(file);
-
       if (file.size > (validationObject.maxSize.value as number)) {
         onError(validationObject.maxSize.errorMessage);
         return true;
@@ -199,21 +200,18 @@ AssetSelect.Button = function AssetSelectButton({
     }
 
     if (validationObject.customValidation) {
-      updatedFiles = [...file, ...newFiles.map((f) => URL.createObjectURL(f))]; // persists existing file
+      updatedFiles = [...updatedFiles, ...newFiles]; // persists existing file
       // Use the external validation function if provided
-      const validationError = validationObject.customValidation(
-        updatedFiles as string[]
-      );
+      const validationError = validationObject.customValidation(updatedFiles);
       if (validationError) {
         onError(validationError);
         return;
       }
     }
 
-    const validFiles = newFiles.map((file) => URL.createObjectURL(file));
-    console.log("setting valid files here");
-    setFile(multiple ? validFiles : validFiles[0]);
-    // TODO: select success should update my main assets object
+    const validFiles = multiple ? updatedFiles : newFiles;
+    setFiles(validFiles);
+    assetRef.current[assetName] = validFiles;
   };
 
   return (

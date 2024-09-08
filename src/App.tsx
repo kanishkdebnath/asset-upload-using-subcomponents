@@ -22,22 +22,10 @@ const defaultAsset: AssetsType = {
 };
 
 function App() {
-  const [assets, setAssets] = useState<AssetsType>(defaultAsset);
-  const [singleImage, setSingleImage] = useState("");
-  const [screenshots, setScreenshots] = useState<string[]>([]);
-  const [singleVideo, setSingleVideo] = useState("");
   const assetRef = useRef(defaultAsset);
 
   const handleSuccess = () => {
-    // Implement your upload logic here
-    const updatedAssets: AssetsType = {
-      singleImage,
-      screenshots,
-      singleVideo,
-    };
-
-    setAssets((prev) => ({ ...prev, ...updatedAssets }));
-    console.log(assets);
+    console.log("Uploading this asset state to backend : ", assetRef.current);
   };
 
   return (
@@ -45,8 +33,6 @@ function App() {
       <AssetSelect
         assetName={"singleImage"}
         assetRef={assetRef}
-        file={singleImage}
-        setFile={(f) => setSingleImage(f as string)}
         validationObject={{
           maxSize: { value: 5242880, errorMessage: "Invalid size" },
           accepted: {
@@ -71,8 +57,6 @@ function App() {
       <AssetSelect
         assetName={"singleVideo"}
         assetRef={assetRef}
-        file={singleVideo}
-        setFile={(f) => setSingleVideo(f as string)}
         validationObject={{
           maxSize: { value: 10485760, errorMessage: "Invalid size" },
           accepted: {
@@ -97,8 +81,6 @@ function App() {
       <AssetSelect
         assetName={"screenshots"}
         assetRef={assetRef}
-        file={screenshots}
-        setFile={(f) => setScreenshots(f as string[])}
         validationObject={{
           maxSize: { value: 5242880, errorMessage: "Invalid size" },
           accepted: {
@@ -112,7 +94,7 @@ function App() {
       >
         <AssetSelect.MultipleImagesPreview className="image-preview" />
         <AssetSelect.Button multiple className="upload-button">
-          <div>Upload Image</div>
+          <div>Upload Images</div>
         </AssetSelect.Button>
         <AssetSelect.Description
           maxSize="5 MB"
@@ -126,27 +108,6 @@ function App() {
 }
 
 export default App;
-
-/* 
-  Things to do :
-  1. Add different state for each asset [file, setFile] [done]
-  2. Add details for description directly as props [done]
-  3. Must not send asset object and send everything separately as props
-  4. Add validateFiles object that takes the following :
-    validationObject = {
-      maxSize: {value: 5000, errorMessage: "invalid size"}
-      accepted: {value: "image/jpeg", errorMessage: "invalid type"}
-      customValidation: () => string
-    }
-  5. onUpload => onSelectSuccess
-  6. Create a collection of all these asset in an object which will be updated later assetsObject.
-    assetObject = {
-      singleImage: "imageUrl",
-      screenshots: ["s1","s2","s3","s4"]
-      singleVideo: "videoUrl"
-    }
-  7. Handle error for each asset using error object for each asset
-*/
 
 function validateScreenshotsLimit(files: File[] | File | string[]) {
   if (Array.isArray(files)) {
