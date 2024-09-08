@@ -4,9 +4,9 @@ import React, {
   useContext,
   useRef,
 } from "react";
-import { ValidationObject } from "../App";
 import DEFAULT_ICON from "../assets/react.svg";
 import "./AssetSelect.css";
+import { ValidationObject } from "../utils/types";
 
 type AssetSelectContext = {
   file: string | string[];
@@ -173,9 +173,9 @@ AssetSelect.Button = function AssetSelectButton({
       }
 
       if (
-        !(validationObject.accepted.value as string)
-          .split(",")
-          .some((type) => file.type.includes(type.trim()))
+        !validationObject.accepted.value.some((type) =>
+          file.type.includes(type.trim())
+        )
       ) {
         onError(validationObject.accepted.errorMessage);
         return true;
@@ -215,7 +215,7 @@ AssetSelect.Button = function AssetSelectButton({
         ref={inputRef}
         type="file"
         multiple={multiple} // Controlled by the `multiple` prop
-        accept={validationObject.accepted.value as string}
+        accept={validationObject.accepted.value.join(",")}
         onChange={handleFileChange}
         style={{ display: "none" }} // Hide the input
       />

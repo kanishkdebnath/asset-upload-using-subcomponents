@@ -4,17 +4,6 @@ import AssetSelect from "./components/AssetSelect";
 
 const MAX_SCREENSHOT_COUNT = 2;
 
-type ValidationRule = {
-  value: number | string;
-  errorMessage: string;
-};
-
-export type ValidationObject = {
-  maxSize: ValidationRule;
-  accepted: ValidationRule;
-  customValidation?: (f: File[] | File | string[]) => string | undefined;
-};
-
 const handleError = (error: string) => {
   // Handle any errors that occur during upload
   console.error("Upload error:", error);
@@ -58,7 +47,7 @@ function App() {
         validationObject={{
           maxSize: { value: 5242880, errorMessage: "Invalid size" },
           accepted: {
-            value: "image/jpeg, image/png",
+            value: ["image/jpeg", "image/png"],
             errorMessage: "Invalid file type",
           },
         }}
@@ -82,7 +71,7 @@ function App() {
         validationObject={{
           maxSize: { value: 10485760, errorMessage: "Invalid size" },
           accepted: {
-            value: "video/mp4",
+            value: ["video/mp4"],
             errorMessage: "Invalid file type",
           },
         }}
@@ -106,7 +95,7 @@ function App() {
         validationObject={{
           maxSize: { value: 5242880, errorMessage: "Invalid size" },
           accepted: {
-            value: "image/jpeg, image/png",
+            value: ["image/jpeg", "image/png"],
             errorMessage: "Invalid file type",
           },
           customValidation: validateScreenshotsLimit,
